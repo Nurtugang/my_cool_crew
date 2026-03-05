@@ -4,8 +4,9 @@ import os
 from datetime import datetime
 from my_cool_crew.crew import MyCoolCrew
 
-AGENTS_PATH = os.path.join("config", "agents.yaml")
-TASKS_PATH = os.path.join("config", "tasks.yaml")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+AGENTS_PATH = os.path.join(BASE_DIR, "config", "agents.yaml")
+TASKS_PATH = os.path.join(BASE_DIR, "config", "tasks.yaml")
 
 def load_yaml(path):
     with open(path, 'r', encoding='utf-8') as f:
