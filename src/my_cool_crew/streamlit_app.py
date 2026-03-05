@@ -1,58 +1,59 @@
 import streamlit as st
-import sys
+import yaml
 import os
 from datetime import datetime
+from my_cool_crew.crew import MyCoolCrew
 
-# Добавляем путь к папке src, чтобы Python видел ваш crew
-sys.path.append(os.path.join(os.getcwd(), "src"))
+AGENTS_PATH = os.path.join("config", "agents.yaml")
+TASKS_PATH = os.path.join("config", "tasks.yaml")
 
-# Теперь импорт должен заработать (проверьте, что папка в src называется именно так)
-try:
-    from my_cool_crew.crew import MyCoolCrew
-except ImportError:
-    st.error("Не удалось найти модуль MyCoolCrew. Проверьте название папки в src/")
-    st.stop()
+def load_yaml(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
 
-st.set_page_config(page_title="CrewAI AI")
+def save_yaml(data, path):
+    with open(path, 'w', encoding='utf-8') as f:
+        yaml.dump(data, f, allow_unicode=True, sort_keys=False)
 
-st.title("🚀 Мультиагентная система управления")
+st.set_page_config(layout="wide")
+st.title("Настройка и запуск агентов")
 
-# Боковая панель с настройками
-with st.sidebar:
-    st.header("Настройки")
-    topic = st.text_input("Тема исследования:", value="AI LLMs")
-    run_button = st.button("Запустить экипаж", type="primary")
+agents_data = load_yaml(AGENTS_PATH)
+tasks_data = load_yaml(TASKS_PATH)
 
-# Основная область
-if run_button:
-    with st.status("🤖 Агенты работают...", expanded=True) as status:
-        st.write("Инициализация экипажа...")
-        
-        inputs = {
-            'topic': topic,
-            'current_year': str(datetime.now().year)
-        }
-        
-        try:
-            # Запуск логики CrewAI
-            result = MyCoolCrew().crew().kickoff(inputs=inputs)
-            
-            status.update(label="✅ Готово!", state="complete", expanded=False)
-            
-            st.subheader("Результат работы:")
-            st.markdown(result.raw)
-            
-            # Если есть файл, даем скачать
-            if hasattr(result, 'tasks_output'):
-                st.download_button(
-                    label="Скачать отчет (.md)",
-                    data=result.raw,
-                    file_name="report.md",
-                    mime="text/markdown"
-                )
-                
-        except Exception as e:
-            st.error(f"Ошибка: {e}")
-            status.update(label="❌ Ошибка выполнения", state="error")
-else:
-    st.info("Введите тему и нажмите кнопку запуска для начала работы агентов.")
+col1, col2 = st.columns(2)
+
+with col1:
+    st.header("Агенты")
+    for name, info in agents_data.items():
+        with st.expander(f"Агент: {name}"):
+            agents_data[name]['role'] = st.text_input("Role", value=info.get('role', ''), key=f"r_{name}")
+            agents_data[name]['goal'] = st.text_area("Goal", value=info.get('goal', ''), key=f"g_{name}")
+            agents_data[name]['backstory'] = st.text_area("Backstory", value=info.get('backstory', ''), key=f"b_{name}")
+
+with col2:
+    st.header("Задачи")
+    for name, info in tasks_data.items():
+        with st.expander(f"Задача: {name}"):
+            tasks_data[name]['description'] = st.text_area("Description", value=info.get('description', ''), key=f"d_{name}")
+            tasks_data[name]['expected_output'] = st.text_area("Expected Output", value=info.get('expected_output', ''), key=f"o_{name}")
+            tasks_data[name]['agent'] = st.text_input("Assigned Agent", value=info.get('agent', ''), key=f"a_{name}")
+
+st.divider()
+
+topic = st.text_input("Тема (topic):", value="AI LLMs")
+
+if st.button("Сохранить и запустить"):
+    save_yaml(agents_data, AGENTS_PATH)
+    save_yaml(tasks_data, TASKS_PATH)
+    
+    inputs = {
+        'topic': topic,
+        'current_year': str(datetime.now().year)
+    }
+    
+    st.write("Выполнение...")
+    result = MyCoolCrew().crew().kickoff(inputs=inputs)
+    
+    st.subheader("Результат:")
+    st.markdown(result.raw)

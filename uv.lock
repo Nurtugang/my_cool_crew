@@ -1735,12 +1735,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "crewai", extra = ["google-genai", "tools"] },
+    { name = "pyyaml" },
     { name = "streamlit" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "crewai", extras = ["google-genai", "tools"], specifier = "==1.9.3" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "streamlit", specifier = ">=1.55.0" },
 ]
 
